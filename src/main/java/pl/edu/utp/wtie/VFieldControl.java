@@ -6,20 +6,29 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.geometry.Pos;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputControl;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import pl.edu.utp.wtie.validation.Validator;
 
-public class FieldControl extends HBox {
+public class VFieldControl extends HBox {
 	
 	private static Map<Control, Field> map = new LinkedHashMap<>();
+	private FontAwesomeIconView icon;
+	private TextInputControl textField;
+	private Label label;
+	private Tooltip tooltip;
+	private Validator v;
 	
-	public FieldControl(double spacing, Field field, Object object, PropertyDescriptor pd) {
+	public VFieldControl(double spacing, Field field, Object object, PropertyDescriptor pd) {
 		
 		this.setSpacing(spacing);
 		this.setAlignment(Pos.CENTER_LEFT);
@@ -36,7 +45,7 @@ public class FieldControl extends HBox {
 				map.put(textArea, field);
 				
 				HBox.setHgrow(textArea, Priority.ALWAYS);
-				Label label = new Label("<- " + field.getName());
+				label = new Label("<- " + field.getName());
 				this.getChildren().addAll(textArea, label);
 			} else if(field.getGenericType().getTypeName().equals("boolean") ||
 					field.getGenericType().getTypeName().equals("java.lang.Boolean")) {
@@ -45,17 +54,44 @@ public class FieldControl extends HBox {
 					checkBox.setSelected(Boolean.parseBoolean(pd.getReadMethod().invoke(object).toString()));
 				map.put(checkBox, field);
 				
-				Label label = new Label("<- " + field.getName());
+				label = new Label("<- " + field.getName());
 				this.getChildren().addAll(checkBox, label);
 			} else {
-				TextField textField = new TextField();
+				icon = new FontAwesomeIconView();
+				icon.setSize("1.8em");
+				icon.setGlyphName("TIMES_CIRCLE");
+				icon.setVisible(false);
+				
+				tooltip = new Tooltip();
+				
+				textField = new TextField();
+				
+				textField.textProperty().addListener((observable, oldValue, newValue) -> {
+					if(v != null) {
+						this.v.validate(textField.getText());
+						
+						icon.setVisible(true);
+						
+						if(v.isValid()) {
+							icon.setGlyphName("CHECK_CIRCLE");
+							icon.setGlyphStyle("-fx-fill:green");
+						} else {
+							icon.setGlyphName("TIMES_CIRCLE");
+							icon.setGlyphStyle("-fx-fill:red");
+						}
+						
+						if(newValue.equals(""))
+							icon.setVisible(false);						
+					}
+				});				
+				
 				if(pd.getReadMethod().invoke(object) != null)
 					textField.setText(pd.getReadMethod().invoke(object).toString());
 				map.put(textField, field);
 				
 				HBox.setHgrow(textField, Priority.ALWAYS);
-				Label label = new Label("<- " + field.getName());
-				this.getChildren().addAll(textField, label);
+				label = new Label("<- " + field.getName());
+				this.getChildren().addAll(icon, textField, label);
 			}			
 		} catch(IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			e.printStackTrace();
@@ -63,6 +99,12 @@ public class FieldControl extends HBox {
 	}
 	
 	public Map<Control, Field> getMap() {
-		return FieldControl.map;
+		return VFieldControl.map;
 	}
+	
+	public void registerValidator(Validator v) {
+		this.v = v;
+		tooltip.setText(v.getMessage());
+		textField.setTooltip(tooltip);
+	}	
 }
