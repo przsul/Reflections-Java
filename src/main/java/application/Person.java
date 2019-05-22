@@ -20,7 +20,7 @@ public class Person {
 	@Password
 	private String password;
 	
-	@Regexp(pattern="^(.+)@(.+)$", message="Type email address.")
+	@Regexp(pattern="^\\S+@\\S+\\.\\S+$", message="Type email address.")
 	private String email;
 	
 	@Regexp(pattern="\\d{2}-\\d{3}", message="Type postal code.")

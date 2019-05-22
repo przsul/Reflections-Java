@@ -28,6 +28,12 @@ public class App extends Application {
 		primaryStage.setTitle("Reflections");
 		primaryStage.show();
 	}
+	
+	public static void setWindow() {
+		App.primaryStage.sizeToScene();
+		App.primaryStage.setMinWidth(App.primaryStage.getWidth());
+		App.primaryStage.setMaxHeight(App.primaryStage.getHeight());
+	}
 
 	public static void main(String[] args) {
 		launch(args);

@@ -2,11 +2,9 @@ package pl.edu.utp.wtie.controllers;
 
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,9 +20,8 @@ import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import pl.edu.utp.wtie.App;
-import pl.edu.utp.wtie.FieldControl;
+import pl.edu.utp.wtie.ControlCreator;
 import pl.edu.utp.wtie.InfoTextArea;
-import pl.edu.utp.wtie.VFieldControl;
 import pl.edu.utp.wtie.validation.Validator;
 
 public class AppController {
@@ -44,21 +41,73 @@ public class AppController {
 	private Class<?> reflectClass;
 	private Constructor<?> constructor;
 	private Object object;
-	private List<Field> fields;
+	
+	private List<Field> classFields;
+	
+	private ControlCreator cc;
+	
 	private Map<Control, Field> map = new LinkedHashMap<>();
-	private VFieldControl vfieldControl;
-	private FieldControl fieldControl;
+	
 	private InfoTextArea infoTextArea;
-	private List<Validator> validators = new ArrayList<>();
+
+	@FXML
+	void initialize() {
+	}
+
+	// Enable save button when all validated fields are correct
+	private void validateControls(List<Validator> validators) {
+		App.primaryStage.getScene().setOnKeyReleased(new EventHandler<KeyEvent>() {
+			@Override
+			public void handle(KeyEvent arg0) {
+				validators.forEach(v -> {
+					if (v.isValid())
+						saveButton.setDisable(false);
+					else
+						saveButton.setDisable(true);
+				});
+			}
+		});	
+	}
+
+	@FXML
+	private void createObject() {
+		try {
+			reflectClass = Class.forName(classTextField.getText());
+			constructor = reflectClass.getConstructor();
+			object = constructor.newInstance();
+
+			classFields = Arrays.asList(reflectClass.getDeclaredFields());
+
+			// Create controls for reflected class
+			cc = new ControlCreator(reflectClass, object, classFields);		
+			cc.createControls();
+			cc.getNodes().forEach(node -> vBox.getChildren().add(node));
+
+			// Create info text area for display saved fields values
+			infoTextArea = new InfoTextArea(5);
+			vBox.getChildren().add(infoTextArea);
+			
+			// Check if controls have valid values
+			validateControls(cc.getValidators());
+
+			createButton.setDisable(true);
+			classTextField.setDisable(true);
+
+			App.setWindow();
+
+		} catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| InstantiationException | NoSuchMethodException | SecurityException e) {
+			e.printStackTrace();
+		}
+	}
 
 	@FXML
 	private void saveObject() {
 
 		infoTextArea.clear();
-
+		map = cc.getMap();
 		map.forEach((input, field) -> {
 			try {
-
 				PropertyDescriptor pd = new PropertyDescriptor(field.getName(), reflectClass);
 				Class<?>[] pTypes = pd.getWriteMethod().getParameterTypes();
 
@@ -127,81 +176,4 @@ public class AppController {
 			}
 		});
 	}
-
-	@FXML
-	private void createObject() {
-		try {
-			reflectClass = Class.forName(classTextField.getText());
-			constructor = reflectClass.getConstructor();
-			object = constructor.newInstance();
-
-			fields = Arrays.asList(reflectClass.getDeclaredFields());
-
-			fields.forEach(field -> {
-				PropertyDescriptor pd = null;
-				try {
-					pd = new PropertyDescriptor(field.getName(), reflectClass);
-				} catch (IntrospectionException e) {
-					e.printStackTrace();
-				}
-
-				Annotation[] annotation = field.getAnnotations();
-
-				if (annotation.length == 0) {
-					fieldControl = new FieldControl(5, field, object, pd);
-					vBox.getChildren().add(fieldControl);
-					this.map.putAll(fieldControl.getMap());
-				} else {
-					vfieldControl = new VFieldControl(5, field, object, pd);
-
-					Object object = null;
-					try {
-						Class<?> reflectValidator = Class.forName("pl.edu.utp.wtie.validation."
-								+ annotation[0].annotationType().getSimpleName() + "Validator");
-						Constructor<?> reflectConstructor = reflectValidator.getConstructor(Field.class);
-						object = reflectConstructor.newInstance(field);
-					} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException
-							| IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-						e.printStackTrace();
-					}
-
-					validators.add((Validator) object);
-					vfieldControl.registerValidator((Validator) object);
-					vBox.getChildren().add(vfieldControl);
-					this.map.putAll(vfieldControl.getMap());
-				}
-			});
-
-			// Create info text area for display saved fields values
-			this.infoTextArea = new InfoTextArea(5);
-			vBox.getChildren().add(infoTextArea);
-
-			// Enable save button when all validated fields are correct
-			App.primaryStage.getScene().setOnKeyReleased(new EventHandler<KeyEvent>() {
-				@Override
-				public void handle(KeyEvent arg0) {
-					validators.forEach(v -> {
-						if (v.isValid())
-							saveButton.setDisable(false);
-						else
-							saveButton.setDisable(true);
-					});
-				}
-			});
-
-			createButton.setDisable(true);
-			classTextField.setDisable(true);
-
-			App.primaryStage.sizeToScene();
-			App.primaryStage.setMinWidth(App.primaryStage.getWidth());
-			App.primaryStage.setMaxHeight(App.primaryStage.getHeight());
-
-		} catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| InstantiationException | NoSuchMethodException | SecurityException e) {
-			e.printStackTrace();
-		}
-	}
-
-	@FXML
-	void initialize() {}
 }
