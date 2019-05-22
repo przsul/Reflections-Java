@@ -7,7 +7,6 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-
 <ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="500.0" maxWidth="350.0" pannable="true" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="pl.edu.utp.wtie.controllers.AppController">
    <content>
       <AnchorPane>
@@ -16,7 +15,7 @@
                <children>
                   <HBox spacing="5.0">
                      <children>
-                        <TextField fx:id="classTextField" text="application.Student" HBox.hgrow="ALWAYS" />
+                        <TextField fx:id="classTextField" text="application.Person" HBox.hgrow="ALWAYS" />
                         <Button fx:id="createButton" mnemonicParsing="false" onAction="#createObject" text="Create object" />
                         <Button fx:id="saveButton" disable="true" mnemonicParsing="false" onAction="#saveObject" text="Save object" />
                      </children>

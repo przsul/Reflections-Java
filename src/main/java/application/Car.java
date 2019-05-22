@@ -1,14 +1,26 @@
 package application;
 
+import pl.edu.utp.wtie.annotations.Regexp;
+
 public class Car {
 	
+	@Regexp(pattern="\\d{2}-\\d{3}", message="Type car brand.")
 	private String brand = "Volkswagen";
+	
+	@Regexp(pattern="\\d{2}-\\d{3}", message="Type car brand.")
 	private String model = "Passat";
+	
 	private int yearOfProduction = 2006;
+	
 	private float mileage = 6.55f;
+	
 	private boolean diesel = true;
+	
 	private boolean petrol = false;
+	
+	//@Regexp(pattern="\\d{2}-\\d{3}", message="Type car brand.")
 	private String text = "This is very popular car.";
+	
 	private char segment = 'D';
 	
 	public String getBrand() {
