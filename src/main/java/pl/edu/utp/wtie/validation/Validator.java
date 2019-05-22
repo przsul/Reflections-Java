@@ -1,4 +1,4 @@
-package pl.edu.utp.wtie;
+package pl.edu.utp.wtie.validation;
 
 public interface Validator {
 	void validate(String value);
