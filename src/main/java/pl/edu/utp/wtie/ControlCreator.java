@@ -24,7 +24,7 @@ public class ControlCreator {
 	private VFieldControl vFieldControl;
 	private FieldControl fieldControl;
 
-	private List<Validator> validators = new ArrayList<>();
+	private Map<VFieldControl, List<Validator>> controlsValidators = new LinkedHashMap<>();
 	private List<Node> nodes = new ArrayList<>();
 	private Map<Control, Field> map = new LinkedHashMap<>();
 
@@ -38,27 +38,33 @@ public class ControlCreator {
 		return nodes;
 	}
 
-	public List<Validator> getValidators() {
-		return validators;
+	public Map<VFieldControl, List<Validator>> getControlsValidators() {
+		return controlsValidators;
 	}
 
 	public Map<Control, Field> getMap() {
 		return map;
 	}
 
-	private Validator reflectValidator(Field classField, Annotation[] annotation) {		
-		Object object = null;
-		try {
-			Class<?> reflectValidator = Class.forName("pl.edu.utp.wtie.validation."
-					+ annotation[0].annotationType().getSimpleName() + "Validator");
-			Constructor<?> reflectConstructor = reflectValidator.getConstructor(Field.class);
-			object = reflectConstructor.newInstance(classField);
-		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException
-				| IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			e.printStackTrace();
-		}		
+	private List<Validator> reflectValidator(Field classField, Annotation[] annotations) {		
+		List<Object> objects = new ArrayList<>();
+		List<Validator> validators = new ArrayList<>();
 		
-		return (Validator)object;
+		for(Annotation annotation : annotations) {
+			try {
+				Class<?> reflectValidator = Class.forName("pl.edu.utp.wtie.validation."
+						+ annotation.annotationType().getSimpleName() + "Validator");
+				Constructor<?> reflectConstructor = reflectValidator.getConstructor(Field.class);
+				objects.add(reflectConstructor.newInstance(classField));
+			} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException
+					| IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+				e.printStackTrace();
+			}					
+		}
+		
+		objects.forEach(object -> validators.add((Validator)object));
+		
+		return validators;
 	}
 	
 	public void createControls() {
@@ -72,10 +78,10 @@ public class ControlCreator {
 				e.printStackTrace();
 			}
 
-			Annotation[] annotation = classField.getAnnotations();
+			Annotation[] annotations = classField.getAnnotations();
 
 			// Create text input without validation
-			if (annotation.length == 0) {
+			if (annotations.length == 0) {
 				fieldControl = new FieldControl(5, classField, object, pd);
 				nodes.add(fieldControl);
 				map.putAll(fieldControl.getMap());
@@ -83,9 +89,9 @@ public class ControlCreator {
 			// Create text input with validation
 			} else {
 				vFieldControl = new VFieldControl(5, classField, object, pd);
-
-				Validator v = reflectValidator(classField, annotation);	
-				validators.add(v);
+				
+				List<Validator> v = reflectValidator(classField, annotations);	
+				controlsValidators.put(vFieldControl, v);
 				vFieldControl.registerValidator(v);
 				
 				nodes.add(vFieldControl);

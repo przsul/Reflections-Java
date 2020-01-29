@@ -35,4 +35,10 @@ public class InfoTextArea extends HBox {
 	public String getText() {
 		return this.infoTextArea.getText();
 	}
+	
+	public void deleteLastChar() {
+		String tmp = infoTextArea.getText();
+		tmp = tmp.substring(0, tmp.length()-1);
+		infoTextArea.setText(tmp);
+	}
 }

@@ -4,6 +4,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
@@ -23,10 +24,10 @@ public class VFieldControl extends HBox {
 	
 	private static Map<Control, Field> map = new LinkedHashMap<>();
 	private FontAwesomeIconView icon;
-	private TextInputControl textField;
+	private TextField textField;
 	private Label label;
 	private Tooltip tooltip;
-	private Validator v;
+	private List<Validator> validators;
 	
 	public VFieldControl(double spacing, Field field, Object object, PropertyDescriptor pd) {
 		
@@ -47,6 +48,7 @@ public class VFieldControl extends HBox {
 				HBox.setHgrow(textArea, Priority.ALWAYS);
 				label = new Label("<- " + field.getName());
 				this.getChildren().addAll(textArea, label);
+				
 			} else if(field.getGenericType().getTypeName().equals("boolean") ||
 					field.getGenericType().getTypeName().equals("java.lang.Boolean")) {
 				CheckBox checkBox = new CheckBox();
@@ -56,6 +58,7 @@ public class VFieldControl extends HBox {
 				
 				label = new Label("<- " + field.getName());
 				this.getChildren().addAll(checkBox, label);
+				
 			} else {
 				icon = new FontAwesomeIconView();
 				icon.setSize("1.8em");
@@ -67,22 +70,25 @@ public class VFieldControl extends HBox {
 				textField = new TextField();
 				
 				textField.textProperty().addListener((observable, oldValue, newValue) -> {
-					if(v != null) {
-						this.v.validate(textField.getText());
-						
-						icon.setVisible(true);
-						
-						if(v.isValid()) {
-							icon.setGlyphName("CHECK_CIRCLE");
-							icon.setGlyphStyle("-fx-fill:green");
-						} else {
-							icon.setGlyphName("TIMES_CIRCLE");
-							icon.setGlyphStyle("-fx-fill:red");
+					for(Validator validator : validators) {
+						if(validator != null) {
+							validator.validate(textField.getText());
+
+							icon.setVisible(true);
+							
+							if(validator.isValid()) {
+								icon.setGlyphName("CHECK_CIRCLE");
+								icon.setGlyphStyle("-fx-fill:green");
+							} else {
+								icon.setGlyphName("TIMES_CIRCLE");
+								icon.setGlyphStyle("-fx-fill:red");
+								break;
+							}
 						}
-						
-						if(newValue.equals(""))
-							icon.setVisible(false);						
 					}
+					
+					if(newValue.equals(""))
+						icon.setVisible(false);
 				});				
 				
 				if(pd.getReadMethod().invoke(object) != null)
@@ -102,9 +108,18 @@ public class VFieldControl extends HBox {
 		return VFieldControl.map;
 	}
 	
-	public void registerValidator(Validator v) {
-		this.v = v;
-		tooltip.setText(v.getMessage());
+	public TextInputControl getTextField() {
+		return textField;
+	}
+	
+	public void registerValidator(List<Validator> validators) {
+		this.validators = validators;
+		String tmp = "";
+		
+		for(Validator validator : validators)
+			tmp += validator.getMessage() + '\n';
+		
+		tooltip.setText(tmp);
 		textField.setTooltip(tooltip);
 	}	
 }
